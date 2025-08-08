@@ -1,0 +1,33 @@
+# Instructions returned to client during initialization
+INSTRUCTIONS = """
+K8s MCP Server provides a simple interface to Kubernetes CLI tools.
+
+Supported CLI tools:
+- kubectl: Kubernetes command-line tool
+- helm: Kubernetes package manager
+- argocd: GitOps continuous delivery tool for Kubernetes
+
+Available tools:
+- Use describe_kubectl, describe_helm or describe_argocd to get documentation for CLI tools
+- Use execute_kubectl, execute_helm or execute_argocd to run commands
+
+Command execution supports Unix pipes (|) to filter or transform output:
+  Example: kubectl get pods -o json | jq '.items[].metadata.name'
+  Example: helm list | grep mysql
+
+Transport protocols supported:
+- stdio: Standard input/output (default)
+- sse: Server-Sent Events over HTTP
+- streamable-http: Streamable HTTP transport
+
+Use the built-in prompt templates for common Kubernetes tasks:
+  - k8s_resource_status: Check status of Kubernetes resources
+  - k8s_deploy_application: Deploy an application to Kubernetes
+  - k8s_troubleshoot: Troubleshoot Kubernetes resources
+  - k8s_resource_inventory: List all resources in cluster
+  - helm_chart_management: Manage Helm charts
+  - argocd_application: Manage ArgoCD applications
+  - k8s_security_check: Security analysis for Kubernetes resources
+  - k8s_resource_scaling: Scale Kubernetes resources
+  - k8s_logs_analysis: Analyze logs from Kubernetes resources
+"""

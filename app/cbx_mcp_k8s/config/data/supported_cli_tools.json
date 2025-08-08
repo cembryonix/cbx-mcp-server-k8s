@@ -1,0 +1,23 @@
+{
+  "kubectl": {
+    "check_cmd": "kubectl version --client",
+    "test_cmd_config": "kubectl auth can-i get nodes",
+    "help_flag": "--help",
+    "description": "Kubernetes command-line tool",
+    "example": "kubectl get pods --all-namespaces"
+    },
+  "helm": {
+    "check_cmd": "helm version",
+    "test_cmd_config": "helm list --short",
+    "help_flag": "--help",
+    "description": "Kubernetes package manager",
+    "example": "helm list --all-namespaces"
+    },
+  "argocd": {
+    "check_cmd": "argocd version --client",
+    "test_cmd_config": "argocd app list --output name",
+    "help_flag": "--help",
+    "description": "GitOps continuous delivery tool for Kubernetes",
+    "example": "argocd app list"
+    }
+}

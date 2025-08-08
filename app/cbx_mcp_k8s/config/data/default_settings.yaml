@@ -1,0 +1,16 @@
+# MCP server run() params
+server:
+  server_name: "cbx-mcp-k8s"
+  transport_type: "http"
+  host: "127.0.0.1"
+  port: 8080
+  log_level: "INFO"
+
+command:
+  default_timeout: 120
+  max_output_size: 100000
+
+security:
+  security_config_path: None   # if None, then use default Security Settings
+  security_mode: "permissive" # strict or permissive
+
