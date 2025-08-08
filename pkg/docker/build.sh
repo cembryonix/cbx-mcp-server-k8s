@@ -43,6 +43,28 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+########################################################
+# "docker info" is for macOS/Rosetta on Apple silicon/Docker Desktop VMs
+detect_local_platform() {
+    if docker info --format '{{.Architecture}}' >/dev/null 2>&1; then
+        case "$(docker info --format '{{.Architecture}}')" in
+            x86_64|amd64)  echo "linux/amd64" ;;
+            aarch64|arm64) echo "linux/arm64" ;;
+            armv7l|armv7)  echo "linux/arm/v7" ;;
+            *) echo "Error: Unsupported Docker architecture '$(docker info --format '{{.Architecture}}')'" >&2; exit 1 ;;
+        esac
+    else
+        # Fallback to host
+        case "$(uname -m)" in
+            x86_64|amd64)  echo "linux/amd64" ;;
+            arm64|aarch64) echo "linux/arm64" ;;
+            armv7l|armv7)  echo "linux/arm/v7" ;;
+            *) echo "Error: Unsupported architecture '$(uname -m)'" >&2; exit 1 ;;
+        esac
+    fi
+}
+
+
 # script is in {root}/pkg/docker/
 root_dir="${script_dir}/../.."
 
@@ -74,18 +96,21 @@ if [ "$publish_build" = true ]; then
     echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${gh_username}" --password-stdin
 
     echo "Building with GitHub Container Registry tag and pushing..."
-    docker buildx build --platform linux/amd64,linux/arm64 \
+    docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 \
         -f ${script_dir}/Dockerfile \
         -t "ghcr.io/${release_github_org}/${docker_image_name}:${release_tag}" \
         --push \
         ${root_dir}
 else
+    local_platform="$(detect_local_platform)"
     echo "Building with local tag only..."
-    docker buildx build --platform linux/arm64 \
-        -f $script_dir/Dockerfile \
+    echo "Using platform: ${local_platform}"
+    docker buildx build \
+        --platform "${local_platform}" \
+        -f "${script_dir}/Dockerfile" \
         -t "${docker_image_name}:${dev_tag}" \
         --load \
-        ${root_dir}
+        "${root_dir}"
 fi
 
 echo "Build completed successfully!"
