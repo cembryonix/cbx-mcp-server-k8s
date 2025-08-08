@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-version="v0.1.0"
+version="v0.1.1"
 
 docker run -d \
   --name cbx-mcp-server-k8s \
