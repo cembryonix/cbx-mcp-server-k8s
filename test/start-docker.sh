@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-docker run -d \
+docker run -it \
   --name cbx-mcp-server-k8s \
-  --restart unless-stopped \
+  -u "$(id -u)":"$(id -g)" \
+  -e HOME=/home/appuser \
   -p 8080:8080 \
   -v ~/.kube:/home/appuser/.kube:ro \
-  ghcr.io/cembryonix/cbx-mcp-server-k8s:v0.1.0
+  -v ~/.config/argocd:/home/appuser/.config/argocd:ro \
+  cbx-mcp-server-k8s:develop
+
+#  ghcr.io/cembryonix/cbx-mcp-server-k8s:v0.1.0
 # cbx-mcp-server-k8s:develop
