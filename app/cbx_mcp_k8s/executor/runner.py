@@ -21,7 +21,7 @@ from .types import (
     CommandHelpResult,
     CommandResult,
 )
-from .validators import is_pipe_command, is_auth_error, get_tool_from_command
+from .validators import is_pipe_command, get_tool_from_command
 
 from ..utils import get_logger
 logger = get_logger(__name__)
@@ -137,51 +137,31 @@ async def execute_command(command: str, timeout: int | None = None) -> CommandRe
         stderr_str = stderr.decode("utf-8", errors="replace")
         execution_time = time.time() - start_time
 
+        # Ensure we always have a valid exit code (fix for validation error)
+        exit_code = process.returncode if process.returncode is not None else -1
+
         # Truncate output if necessary
         max_output_size = command_settings.get('max_output_size')
         if len(stdout_str) > max_output_size:
             logger.info(f"Output truncated from {len(stdout_str)} to {max_output_size} characters")
             stdout_str = stdout_str[:max_output_size] + "\n... (output truncated)"
 
-        if process.returncode != 0:
-            logger.warning(f"Command failed with return code {process.returncode}: {command}")
+        if exit_code != 0:
+            logger.warning(f"Command failed with return code {exit_code}: {command}")
             logger.debug(f"Command error output: {stderr_str}")
 
             error_message = stderr_str or "Command failed with no error output"
 
-            if is_auth_error(stderr_str):
-                cli_tool = get_tool_from_command(command)
-                auth_error_msg = f"Authentication error: {stderr_str}"
+            raise CommandExecutionError(
+                error_message,
+                {
+                    "command": command,
+                    "exit_code": exit_code,
+                    "stderr": stderr_str,
+                },
+            )
 
-                match cli_tool:
-                    case "kubectl":
-                        auth_error_msg += "\nPlease check your kubeconfig."
-                    case "istioctl":
-                        auth_error_msg += "\nPlease check your Istio configuration."
-                    case "helm":
-                        auth_error_msg += "\nPlease check your Helm repository configuration."
-                    case "argocd":
-                        auth_error_msg += "\nPlease check your ArgoCD login status."
-
-                raise AuthenticationError(
-                    auth_error_msg,
-                    {
-                        "command": command,
-                        "exit_code": process.returncode,
-                        "stderr": stderr_str,
-                    },
-                )
-            else:
-                raise CommandExecutionError(
-                    error_message,
-                    {
-                        "command": command,
-                        "exit_code": process.returncode,
-                        "stderr": stderr_str,
-                    },
-                )
-
-        return CommandResult(status="success", output=stdout_str, exit_code=process.returncode, execution_time=execution_time)
+        return CommandResult(status="success", output=stdout_str, exit_code=exit_code, execution_time=execution_time)
     except asyncio.CancelledError:
         raise
     except (CommandValidationError, CommandExecutionError, AuthenticationError, CommandTimeoutError):
@@ -231,28 +211,28 @@ async def execute_tool_command(
         logger.warning(f"{tool} command validation error: {e}")
         if ctx:
             await ctx.error(f"Command validation error: {str(e)}")
-        return create_error_result(e, command=command)
+        return create_error_result(e, command=command, exit_code=0)
     except CommandExecutionError as e:
         logger.warning(f"{tool} command execution error: {e}")
         if ctx:
             await ctx.error(f"Command execution error: {str(e)}")
-        return create_error_result(e, command=command)
+        return create_error_result(e, command=command, exit_code=0)
     except AuthenticationError as e:
         logger.warning(f"{tool} command authentication error: {e}")
         if ctx:
             await ctx.error(f"Authentication error: {str(e)}")
-        return create_error_result(e, command=command)
+        return create_error_result(e, command=command, exit_code=0)
     except CommandTimeoutError as e:
         logger.warning(f"{tool} command timeout error: {e}")
         if ctx:
             await ctx.error(f"Command timed out: {str(e)}")
-        return create_error_result(e, command=command)
+        return create_error_result(e, command=command, exit_code=0)
     except Exception as e:
         logger.error(f"Error in execute_{tool}: {e}")
         if ctx:
             await ctx.error(f"Unexpected error: {str(e)}")
         error = CommandExecutionError(f"Unexpected error: {str(e)}", {"command": command})
-        return create_error_result(error, command=command)
+        return create_error_result(error, command=command, exit_code=0)
 
 
 async def get_command_help(cli_tool: str, help_flag:str, command: str | None = None) -> CommandHelpResult:
@@ -314,9 +294,3 @@ async def get_command_help(cli_tool: str, help_flag:str, command: str | None = N
             status="error",
             error={"message": f"Error retrieving help: {str(e)}", "code": "INTERNAL_ERROR"},
         )
-
-
-
-
-
-
