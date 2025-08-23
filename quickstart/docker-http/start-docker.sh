@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+gh_owner="cembryonix"
 version="v0.1.1"
 
 docker run -d \
@@ -10,4 +11,4 @@ docker run -d \
   -p 8080:8080 \
   -v ~/.kube:/home/appuser/.kube:ro \
   -v ~/.config/argocd:/home/appuser/.config/argocd:ro \
-  ghcr.io/vkuusk/cbx-mcp-server-k8s:${version}
+  ghcr.io/${gh_owner}/cbx-mcp-server-k8s:${version}
