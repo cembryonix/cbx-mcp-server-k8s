@@ -1,0 +1,66 @@
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cbx-mcp-k8s.fullname" . }}
+  labels:
+    {{- include "cbx-mcp-k8s.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cbx-mcp-k8s.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cbx-mcp-k8s.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: mcp-server
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: HOME
+              value: {{ .Values.env.HOME | default "/home/appuser" | quote }}
+            - name: CBX_CONFIG_NAME
+              value: {{ .Values.env.CBX_CONFIG_NAME | default "http" | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: mcp-config
+              mountPath: /home/appuser/app_configs/mcp-config.yaml
+              subPath: mcp-config.yaml
+            - name: kubeconfig
+              mountPath: /home/appuser/.kube/config
+              subPath: config
+              readOnly: true
+            - name: argocd-config
+              mountPath: /home/appuser/.config/argocd/config
+              subPath: config
+              readOnly: true
+      volumes:
+        - name: mcp-config
+          configMap:
+            name: {{ include "cbx-mcp-k8s.fullname" . }}-config
+        - name: kubeconfig
+          secret:
+            secretName: {{ .Values.secretReferences.kubeconfig.secretName }}
+        - name: argocd-config
+          secret:
+            secretName: {{ .Values.secretReferences.argocdConfig.secretName }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

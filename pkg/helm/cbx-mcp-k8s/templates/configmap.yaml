@@ -1,0 +1,10 @@
+# templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "cbx-mcp-k8s.fullname" . }}-config
+  labels:
+    {{- include "cbx-mcp-k8s.labels" . | nindent 4 }}
+data:
+  mcp-config.yaml: |
+{{ .Values.config | indent 4 }}
