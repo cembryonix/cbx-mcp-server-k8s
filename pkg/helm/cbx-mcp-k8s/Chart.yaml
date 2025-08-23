@@ -1,0 +1,11 @@
+apiVersion: v2
+name: cbx-mcp-server-k8s
+description: A Helm chart for Kubernetes
+
+type: application
+
+# chart version.
+version: 0.1.0
+
+# version number of the application (mcp-server-k8s)
+appVersion: "0.1.0"
