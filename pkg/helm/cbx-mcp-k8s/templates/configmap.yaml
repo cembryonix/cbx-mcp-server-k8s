@@ -6,5 +6,5 @@ metadata:
   labels:
     {{- include "cbx-mcp-k8s.labels" . | nindent 4 }}
 data:
-  mcp-config.yaml: |
+  config.yaml: |
 {{ .Values.config | indent 4 }}
