@@ -62,6 +62,9 @@ def get_mcp_config(config_dir: str | None):
     # 3. Deep merge: defaults + user overrides
     mcp_config = deep_merge_dicts(default_config, user_config)
 
+    # 4. Apply environment variable overrides (highest priority)
+    mcp_config = apply_env_overrides(mcp_config)
+
     logger.info("MCP_CONFIG loaded successfully")
     logger.debug(f"Final config: {mcp_config}")
 
@@ -178,3 +181,71 @@ def get_security_config(mcp_config: dict) -> dict:
         'safe_patterns': safe_patterns,
         'regex_rules': regex_rules
     }
+
+
+def apply_env_overrides(config_dict: dict) -> dict:
+
+    # Get all CBX_MCP_ environment variables
+    cbx_env_vars = {k: v for k, v in os.environ.items() if k.startswith('CBX_MCP_')}
+
+    if not cbx_env_vars:
+        logger.debug("No CBX_MCP_ env overrides found. Skipping.")
+        return config_dict
+
+    logger.info(f"Processing {len(cbx_env_vars)} environment variable overrides")
+
+    for env_key, env_value in cbx_env_vars.items():
+        try:
+            # Parse CBX_MCP_<SECTION>_<KEY>
+            section, key = parse_env_key(env_key)
+            # Convert to proper type (as in YAML)
+            typed_value = yaml.safe_load(env_value)
+
+            set_nested_value(config_dict, section, key, typed_value)
+
+            logger.info(f"ENV override: {section}.{key}={typed_value} (from {env_key})")
+
+        except ValueError as e:
+            logger.error(f"Invalid env variable format '{env_key}': {e}. Skipping.")
+            continue
+        except yaml.YAMLError as e:
+            logger.error(f"Invalid YAML value in '{env_key}={env_value}': {e}. Skipping.")
+            continue
+        except Exception as e:
+            logger.error(f"Error processing env override '{env_key}={env_value}': {e}. Skipping.")
+            continue
+
+    return config_dict
+
+
+def parse_env_key(env_key: str) -> tuple[str, str]:
+
+    # Remove CBX_MCP_ prefix
+    remainder = env_key[8:]  # len('CBX_MCP_') = 8
+
+    if not remainder:
+        raise ValueError("Environment variable must have content after 'CBX_MCP_'")
+
+    # Split on first underscore to get section and key
+    parts = remainder.split('_', 1)
+
+    if len(parts) != 2:
+        raise ValueError(f"Environment variable must follow pattern 'CBX_MCP_<SECTION>_<KEY>'")
+
+    section, key = parts
+
+    if not section or not key:
+        raise ValueError("Both section and key must be non-empty")
+
+    # Convert to lowercase
+    return section.lower(), key.lower()
+
+
+def set_nested_value(config_dict: dict, section: str, key: str, value) -> None:
+
+    # Ensure section exists
+    if section not in config_dict:
+        config_dict[section] = {}
+
+    # Set the value
+    config_dict[section][key] = value

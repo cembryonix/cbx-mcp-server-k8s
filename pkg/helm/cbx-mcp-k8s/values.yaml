@@ -65,13 +65,13 @@ affinity: {}
 ## Environment variables (set as defaults. have to be synced with Dockerfile)
 env:
   HOME: "/home/appuser"          # should be in sync with Dockerfile
-  CBX_CONFIG_NAME: "http"        # should be in sync with Dockerfile
+  CBX_MCP_SERVER_TRANSPORT_TYPE: "http"        # should be in sync with Dockerfile
 
 ## Volume mount paths (do not change for now)
 #volumes:
 #  config:
-#    mountPath: "/home/appuser/app_configs/mcp-config.yaml"  # should be in sync with Dockerfile
-#    subPath: "mcp-config.yaml"                              # should be in sync with Dockerfile
+#    mountPath: "/home/appuser/app_configs/config.yaml"  # should be in sync with Dockerfile
+#    subPath: "config.yaml"                              # should be in sync with Dockerfile
 #  kubeconfig:
 #    mountPath: "/home/appuser/.kube/config"                 # should be in sync with Dockerfile
 #  argocd:
