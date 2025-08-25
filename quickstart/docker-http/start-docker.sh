@@ -3,11 +3,10 @@
 gh_owner="cembryonix"
 version="v0.1.1"
 
-docker run -d \
+docker run -it --rm \
   --name cbx-mcp-server-k8s \
-  --restart unless-stopped \
-  -u "$(id -u)":"$(id -g)" \
   -e HOME=/home/appuser \
+  -e CBX_MCP_SERVER_TRANSPORT_TYPE=http \
   -p 8080:8080 \
   -v ~/.kube:/home/appuser/.kube:ro \
   -v ~/.config/argocd:/home/appuser/.config/argocd:ro \

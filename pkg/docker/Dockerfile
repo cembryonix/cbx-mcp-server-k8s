@@ -136,8 +136,7 @@ COPY README.md LICENSE NOTICE ./
 COPY app/main.py ./
 COPY app/cbx_mcp_k8s/ ./cbx_mcp_k8s/
 COPY pkg/docker/entrypoint.sh ./
-COPY pkg/docker/server_configs/http/ /home/appuser/app_configs/http/
-COPY pkg/docker/server_configs/stdio/ /home/appuser/app_configs/stdio/
+COPY pkg/docker/server_configs/default_config.yaml /home/appuser/app_configs/config.yaml
 
 # Fix ownership and permissions for all copied files (consolidated)
 RUN chmod +x /app/entrypoint.sh \
