@@ -47,67 +47,7 @@ def get_tool_from_command(command: str) -> str | None:
     return cmd_parts[0] if cmd_parts[0] in TOOLS_CONFIG else None
 
 
-# List of allowed Unix commands that can be used in a pipe
-ALLOWED_UNIX_COMMANDS = [
-    # File operations
-    "cat",
-    "ls",
-    "cd",
-    "pwd",
-    "cp",
-    "mv",
-    "rm",
-    "mkdir",
-    "touch",
-    "chmod",
-    "chown",
-    # Text processing
-    "grep",
-    "sed",
-    "awk",
-    "cut",
-    "sort",
-    "uniq",
-    "wc",
-    "head",
-    "tail",
-    "tr",
-    "find",
-    # System information
-    "ps",
-    "top",
-    "df",
-    "du",
-    "uname",
-    "whoami",
-    "date",
-    "which",
-    "echo",
-    # Networking
-    "ping",
-    "ifconfig",
-    "netstat",
-    "curl",
-    "wget",
-    "dig",
-    "nslookup",
-    "ssh",
-    "scp",
-    # Other utilities
-    "man",
-    "less",
-    "tar",
-    "gzip",
-    "gunzip",
-    "zip",
-    "unzip",
-    "xargs",
-    "jq",  # JSON processor
-    "yq",  # YAML processor
-    "tee",
-    "column",  # Table formatting
-    "watch",  # Repeat command execution
-]
+
 
 
 def validate_unix_command(command: str) -> bool:
@@ -124,7 +64,7 @@ def validate_unix_command(command: str) -> bool:
         return False
 
     # Check if the command is in the allowed list
-    return cmd_parts[0] in ALLOWED_UNIX_COMMANDS
+    return cmd_parts[0] in SECURITY_CONFIG.get('allowed_unix_commands',[])         # ALLOWED_UNIX_COMMANDS
 
 
 def is_pipe_command(command: str) -> bool:

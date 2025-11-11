@@ -78,3 +78,134 @@ regex_rules:
     - pattern: "helm\\s+uninstall\\s+.*\\s+--no-hooks\\b"
       description: "Helm uninstall without hooks"
       error_message: "Using --no-hooks with helm uninstall is restricted as it may skip important cleanup."
+
+# Allowed Unix commands for MCP server
+allowed_unix_commands:
+  # File operations
+  - cat
+  - ls
+  - cd
+  - pwd
+#  - cp
+#  - mv
+#  - rm
+#  - mkdir
+#  - touch
+#  - chmod
+#  - chown
+
+  # Text processing
+  - grep
+  - sed
+  - awk
+  - cut
+  - sort
+  - uniq
+  - wc
+  - head
+  - tail
+  - tr
+  - find
+
+  # System information
+  - ps
+  - top
+  - df
+  - du
+  - uname
+  - whoami
+  - date
+  - which
+  - echo
+
+  # Networking
+  - ping
+  - ifconfig
+  - netstat
+  - curl
+  - wget
+  - dig
+  - nslookup
+  - ssh
+  - scp
+
+  # Other utilities
+  - man
+  - less
+  - tar
+  - gzip
+  - gunzip
+  - zip
+  - unzip
+  - xargs
+  - jq     # JSON processor
+  - yq     # YAML processor
+  - tee
+  - column # Table formatting
+  - watch  # Repeat command execution
+
+
+
+
+# Allowed UNIX commands
+# List of allowed Unix commands that can be used in a pipe
+#ALLOWED_UNIX_COMMANDS = [
+#    # File operations
+#    "cat",
+#    "ls",
+#    "cd",
+#    "pwd",
+#    "cp",
+#    "mv",
+#    "rm",
+#    "mkdir",
+#    "touch",
+#    "chmod",
+#    "chown",
+#    # Text processing
+#    "grep",
+#    "sed",
+#    "awk",
+#    "cut",
+#    "sort",
+#    "uniq",
+#    "wc",
+#    "head",
+#    "tail",
+#    "tr",
+#    "find",
+#    # System information
+#    "ps",
+#    "top",
+#    "df",
+#    "du",
+#    "uname",
+#    "whoami",
+#    "date",
+#    "which",
+#    "echo",
+#    # Networking
+#    "ping",
+#    "ifconfig",
+#    "netstat",
+#    "curl",
+#    "wget",
+#    "dig",
+#    "nslookup",
+#    "ssh",
+#    "scp",
+#    # Other utilities
+#    "man",
+#    "less",
+#    "tar",
+#    "gzip",
+#    "gunzip",
+#    "zip",
+#    "unzip",
+#    "xargs",
+#    "jq",  # JSON processor
+#    "yq",  # YAML processor
+#    "tee",
+#    "column",  # Table formatting
+#    "watch",  # Repeat command execution
+#]
