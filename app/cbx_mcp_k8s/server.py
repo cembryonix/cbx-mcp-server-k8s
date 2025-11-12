@@ -8,6 +8,7 @@ from.version import __version__
 from .tools import register_tools
 from .prompts import register_prompts
 from .resources import register_resources
+from .middleware import ToolCallPreprocessor
 
 from .utils import get_logger
 
@@ -26,6 +27,10 @@ def create_server() -> FastMCP:
         instructions=instructions,
         version=__version__
     )
+
+    # Register middleware (must be done before registering tools)
+    logger.info("Registering ToolCallPreprocessor middleware")
+    mcp.add_middleware(ToolCallPreprocessor())
 
     # Register prompts
     logger.info("Registering prompts")
