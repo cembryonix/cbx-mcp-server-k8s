@@ -139,7 +139,6 @@ def check_tool_installed(install_check_command: str) -> bool:
 
 
 
-#def load_security_config(mcp_config):
 def get_security_config(mcp_config: dict) -> dict:
     """Load security configuration from YAML file or use defaults."""
 
@@ -149,9 +148,22 @@ def get_security_config(mcp_config: dict) -> dict:
         default_security_config = yaml.safe_load(f)
 
     # Initialize from defaults - these MUST exist in the default config
-    dangerous_commands = default_security_config["dangerous_commands"].copy()
-    safe_patterns = default_security_config["safe_patterns"].copy()
+    dangerous_commands = default_security_config.get("dangerous_commands", {}).copy()
+    safe_patterns = default_security_config.get("safe_patterns", {}).copy()
+    allowed_unix_commands = default_security_config.get("allowed_unix_commands", []).copy()
+
+    # Load regex rules from defaults
     regex_rules = {}
+    for tool, rules in default_security_config.get("regex_rules", {}).items():
+        regex_rules[tool] = []
+        for rule in rules:
+            regex_rules[tool].append({
+                "pattern": rule["pattern"],
+                "description": rule.get("description", ""),
+                "error_message": rule.get("error_message",
+                                          f"Command matches restricted pattern: {rule['pattern']}"),
+                "regex": True,
+            })
 
     # Override with custom config if provided
     security_config_path = mcp_config.get('security', {}).get("security_config_path")
@@ -163,14 +175,18 @@ def get_security_config(mcp_config: dict) -> dict:
         dangerous_commands.update(config_data.get("dangerous_commands", {}))
         safe_patterns.update(config_data.get("safe_patterns", {}))
 
-        # Load regex rules
+        # Update allowed unix commands (replace if provided)
+        if "allowed_unix_commands" in config_data:
+            allowed_unix_commands = config_data["allowed_unix_commands"]
+
+        # Load additional regex rules from custom config
         for tool, rules in config_data.get("regex_rules", {}).items():
-            regex_rules[tool] = []
+            if tool not in regex_rules:
+                regex_rules[tool] = []
             for rule in rules:
-                # Create plain dict instead of ValidationRule object
                 regex_rules[tool].append({
                     "pattern": rule["pattern"],
-                    "description": rule["description"],
+                    "description": rule.get("description", ""),
                     "error_message": rule.get("error_message",
                                               f"Command matches restricted pattern: {rule['pattern']}"),
                     "regex": True,
@@ -179,7 +195,8 @@ def get_security_config(mcp_config: dict) -> dict:
     return {
         'dangerous_commands': dangerous_commands,
         'safe_patterns': safe_patterns,
-        'regex_rules': regex_rules
+        'regex_rules': regex_rules,
+        'allowed_unix_commands': allowed_unix_commands,
     }
 
 

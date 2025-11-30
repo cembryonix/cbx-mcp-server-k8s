@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+
+# Backup files
+*.bkp*
+*-bkp-*
+*.backup
+*.orig
+
+# Testing
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Development
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Documentation (not needed in image)
+docs/
+*.md
+!README.md
+!LICENSE
+!NOTICE
+
+# Temp and build artifacts
+temp/
+tmp/
+build/
+dist/
+*.log
+
+# Local configs (use Docker's own configs)
+.env
+.env.*
+*.local.yaml
+*.local.json
+
+# Claude/AI tools
+.claude/
+CLAUDE.md

@@ -6,7 +6,8 @@ TOOLS_CONFIG = {}
 SECURITY_CONFIG = {
     'dangerous_commands': {},
     'safe_patterns': {},
-    'regex_rules': {}
+    'regex_rules': {},
+    'allowed_unix_commands': []
 }
 INSTRUCTIONS = ""
 from .configuration import load_configs
@@ -43,6 +44,9 @@ class ConfigManager:
 
         SECURITY_CONFIG['regex_rules'].clear()
         SECURITY_CONFIG['regex_rules'].update(security_config.get('regex_rules', {}))
+
+        SECURITY_CONFIG['allowed_unix_commands'].clear()
+        SECURITY_CONFIG['allowed_unix_commands'].extend(security_config.get('allowed_unix_commands', []))
 
         INSTRUCTIONS = instructions
 

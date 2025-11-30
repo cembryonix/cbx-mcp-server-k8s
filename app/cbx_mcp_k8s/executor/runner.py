@@ -168,120 +168,112 @@ async def execute_single_command(command: str, timeout: int, start_time: float) 
 
 
 async def execute_piped_commands(command_list: list[str], timeout: int, start_time: float) -> CommandResult:
-    """Execute piped commands with timeout only on first command."""
+    """Execute piped commands sequentially, passing output between stages.
+
+    Uses communicate() to capture output from each stage and pass it as input
+    to the next stage. Timeout is applied only to the first command.
+
+    Args:
+        command_list: List of commands to execute in sequence
+        timeout: Timeout in seconds (applied only to first command)
+        start_time: Start time for execution timing
+
+    Returns:
+        CommandResult from the final command in the pipe chain
+    """
     command_settings = MCP_CONFIG.get("command")
-    processes = []
     original_command = " | ".join(command_list)
+    current_input: bytes | None = None
+    current_process: asyncio.subprocess.Process | None = None
 
-    try:
-        # Start all processes in the pipe chain
-        for i, cmd in enumerate(command_list):
-            cmd_args = shlex.split(cmd)
+    for i, cmd in enumerate(command_list):
+        cmd_args = shlex.split(cmd)
+        stage_num = i + 1
+        is_first = (i == 0)
+        is_last = (i == len(command_list) - 1)
 
-            if i == 0:  # First command
-                first_process = await asyncio.create_subprocess_exec(
-                    *cmd_args,
-                    stdout=PIPE,
-                    stderr=PIPE,
-                )
-                processes.append(first_process)
-                prev_stdout = first_process.stdout
-
-            else:  # Middle or last commands
-                next_process = await asyncio.create_subprocess_exec(
-                    *cmd_args,
-                    stdin=prev_stdout,
-                    stdout=PIPE,
-                    stderr=PIPE,
-                )
-                processes.append(next_process)
-                if i < len(command_list) - 1:
-                    prev_stdout = next_process.stdout
-
-        # Apply timeout only to first process
-        first_process = processes[0]
-        last_process = processes[-1]
+        logger.debug(f"Executing pipe stage {stage_num}/{len(command_list)}: {cmd}")
 
         try:
-            # Wait for first process to complete with timeout
-            await asyncio.wait_for(first_process.wait(), timeout)
-            logger.debug(f"First command in pipe completed with return code: {first_process.returncode}")
+            current_process = await asyncio.create_subprocess_exec(
+                *cmd_args,
+                stdin=PIPE if current_input is not None else None,
+                stdout=PIPE,
+                stderr=PIPE,
+            )
 
-            # Check if first command failed
-            if first_process.returncode != 0:
-                # Kill remaining processes
-                await kill_process_chain(processes[1:])
+            if is_first:
+                # Apply timeout only to first command
+                try:
+                    stdout, stderr = await asyncio.wait_for(
+                        current_process.communicate(input=current_input),
+                        timeout
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"First command in pipe timed out after {timeout} seconds: {cmd}")
+                    try:
+                        current_process.kill()
+                        await current_process.wait()
+                    except Exception as e:
+                        logger.error(f"Error killing timed out process: {e}")
 
-                # Get stderr from first process
-                _, first_stderr = await first_process.communicate()
-                stderr_str = first_stderr.decode("utf-8", errors="replace") if first_stderr else ""
+                    raise CommandTimeoutError(
+                        f"First command in pipe timed out after {timeout} seconds",
+                        {
+                            "command": original_command,
+                            "timeout": timeout,
+                            "timed_out_command": cmd
+                        }
+                    ) from None
+            else:
+                # Subsequent commands run without timeout
+                stdout, stderr = await current_process.communicate(input=current_input)
+
+            # Check for command failure
+            if current_process.returncode != 0:
+                stderr_str = stderr.decode("utf-8", errors="replace") if stderr else ""
+                logger.warning(f"Pipe stage {stage_num} failed with return code {current_process.returncode}: {cmd}")
 
                 raise CommandExecutionError(
-                    f"First command in pipe failed: {command_list[0]}",
+                    f"Command failed at stage {stage_num}: {cmd}",
                     {
                         "command": original_command,
-                        "failed_stage": 1,
-                        "failed_command": command_list[0],
-                        "exit_code": first_process.returncode,
+                        "failed_stage": stage_num,
+                        "failed_command": cmd,
+                        "exit_code": current_process.returncode,
                         "stderr": stderr_str,
                     },
                 )
 
-            # First command succeeded, now wait for the rest of the pipe to complete
-            logger.debug("First command succeeded, waiting for pipe chain to complete...")
-            stdout, stderr = await last_process.communicate()
+            logger.debug(f"Pipe stage {stage_num} completed successfully")
 
-        except asyncio.TimeoutError:
-            logger.warning(f"First command in pipe timed out after {timeout} seconds: {command_list[0]}")
+            # Pass stdout as input to next stage (unless this is the last command)
+            if not is_last:
+                current_input = stdout
 
-            # Kill entire pipe chain
-            await kill_process_chain(processes)
-
-            execution_time = time.time() - start_time
-            raise CommandTimeoutError(
-                f"First command in pipe timed out after {timeout} seconds",
+        except (CommandTimeoutError, CommandExecutionError):
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error at pipe stage {stage_num}: {e}")
+            if current_process and current_process.returncode is None:
+                try:
+                    current_process.kill()
+                    await current_process.wait()
+                except Exception as kill_error:
+                    logger.error(f"Error killing process: {kill_error}")
+            raise CommandExecutionError(
+                f"Unexpected error at stage {stage_num}: {str(e)}",
                 {
                     "command": original_command,
-                    "timeout": timeout,
-                    "timed_out_command": command_list[0]
-                }
-            ) from None
+                    "failed_stage": stage_num,
+                    "failed_command": cmd,
+                },
+            ) from e
 
-        # Check for failures in remaining processes
-        for i, process in enumerate(processes):
-            if process.returncode != 0:
-                stage_num = i + 1
-                failed_cmd = command_list[i]
-
-                # Get stderr from failed process if available
-                try:
-                    if process.stderr:
-                        stderr_data = await process.stderr.read()
-                        stage_stderr = stderr_data.decode("utf-8", errors="replace")
-                    else:
-                        stage_stderr = ""
-                except:
-                    stage_stderr = ""
-
-                raise CommandExecutionError(
-                    f"Command failed at stage {stage_num}: {failed_cmd}",
-                    {
-                        "command": original_command,
-                        "failed_stage": stage_num,
-                        "failed_command": failed_cmd,
-                        "exit_code": process.returncode,
-                        "stderr": stage_stderr,
-                    },
-                )
-
-        return await process_command_result(
-            last_process, stdout, stderr, original_command, start_time, command_settings
-        )
-
-    except Exception as e:
-        # Clean up any running processes
-        await kill_process_chain(processes)
-        raise
+    # Process final result
+    return await process_command_result(
+        current_process, stdout, stderr, original_command, start_time, command_settings
+    )
 
 
 async def kill_process_chain(processes: list[asyncio.subprocess.Process]) -> None:

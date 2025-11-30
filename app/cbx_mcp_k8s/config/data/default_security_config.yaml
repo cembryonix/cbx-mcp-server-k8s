@@ -53,15 +53,16 @@ safe_patterns:
 # Advanced regex pattern rules for more complex validations
 regex_rules:
   kubectl:
-    # Prevent deleting all resources at once
-    - pattern: "kubectl\\s+delete\\s+(-[A-Za-z]+\\s+)*--all\\b"
+    # Prevent operations across all namespaces (check this BEFORE --all pattern)
+    - pattern: "kubectl\\s+.*\\s+--all-namespaces\\b"
+      description: "Operations across all namespaces"
+      error_message: "Operations across all namespaces are restricted."
+
+    # Prevent deleting all resources at once (matches: kubectl delete pods --all)
+    # Uses negative lookahead to not match --all-namespaces
+    - pattern: "kubectl\\s+delete\\s+.*\\s+--all(?!-namespaces)\\b"
       description: "Deleting all resources of a type"
       error_message: "Deleting all resources is restricted. Specify individual resources to delete."
-    
-    # Prevent operations across all namespaces
-    - pattern: "kubectl\\s+delete\\s+(-[A-Za-z]+\\s+)*--all-namespaces\\b"
-      description: "Deleting resources in all namespaces"
-      error_message: "Deleting resources across all namespaces is restricted."
     
     # Restrict dangerous file operations via kubectl exec
     - pattern: "kubectl\\s+exec\\s+.*\\s+-[^-]*c\\s+.*(rm|mv|cp|curl|wget|chmod)\\b"
