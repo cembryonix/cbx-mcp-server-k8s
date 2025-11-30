@@ -1,78 +1,87 @@
 # tools/__init__.py
+"""
+Dynamic tool registration for CLI tools.
+Tools are registered based on TOOLS_CONFIG - no code changes needed to add new tools.
+"""
 
 from fastmcp import FastMCP, Context
 from pydantic import Field
 
-
 from ..executor import CommandHelpResult, CommandResult
 from ..config import TOOLS_CONFIG
-
-from .kubectl import kubectl_describe, kubectl_execute
-from .helm import helm_describe, helm_execute
-from .argocd import argocd_describe, argocd_execute
+from .cli_tools import cli_describe, cli_execute, get_tool_display_name
 from ..utils import get_logger
+
 logger = get_logger(__name__)
 
 
 def register_tools(mcp: FastMCP, config: dict) -> None:
-    """Register MCP tool functions with the MCP server."""
+    """
+    Dynamically register MCP tool functions for all configured CLI tools.
 
-    # Register kubectl related tools
-    if "kubectl" in TOOLS_CONFIG:
-        @mcp.tool()
-        async def describe_kubectl(
-                command: str | None = Field(description="Specific kubectl command to get help for", default=None),
-                ctx: Context | None = None,
-        ) -> CommandHelpResult:
-            """Get documentation and help text for kubectl commands."""
-            return await kubectl_describe(command, ctx)
+    Tools are registered based on TOOLS_CONFIG. To add a new tool:
+    1. Add entry to supported_cli_tools.json
+    2. Add security rules to default_security_config.yaml (optional)
 
-        @mcp.tool(description="Execute kubectl commands with support for Unix pipes.")
-        async def execute_kubectl(
-                command: str = Field(description="Complete kubectl command to execute (including any pipes and flags)"),
-                timeout: int | None = Field(description="Maximum execution time in seconds (default: 300)",
-                                            default=None),
-                ctx: Context | None = None,
-        ) -> CommandResult:
-            """Execute kubectl commands with support for Unix pipes."""
-            return await kubectl_execute(command, timeout, ctx)
+    No code changes required!
+    """
 
-    # Register helm related tools
-    if "helm" in TOOLS_CONFIG:
-        @mcp.tool()
-        async def describe_helm(
-                command: str | None = Field(description="Specific Helm command to get help for", default=None),
-                ctx: Context | None = None,
-        ) -> CommandHelpResult:
-            """Get documentation and help text for Helm commands."""
-            return await helm_describe(command, ctx)
+    for tool_name in TOOLS_CONFIG:
+        tool_config = TOOLS_CONFIG[tool_name]
+        display_name = get_tool_display_name(tool_name)
 
-        @mcp.tool(description="Execute Helm commands with support for Unix pipes.")
-        async def execute_helm(
-                command: str = Field(description="Complete Helm command to execute (including any pipes and flags)"),
-                timeout: int | None = Field(description="Maximum execution time in seconds (default: 300)",
-                                            default=None),
-                ctx: Context | None = None,
-        ) -> CommandResult:
-            """Execute Helm commands with support for Unix pipes."""
-            return await helm_execute(command, timeout, ctx)
+        logger.debug(f"Registering tools for: {tool_name}")
 
-    # Register argocd related tools
-    if "argocd" in TOOLS_CONFIG:
-        @mcp.tool()
-        async def describe_argocd(
-                command: str | None = Field(description="Specific ArgoCD command to get help for", default=None),
-                ctx: Context | None = None,
-        ) -> CommandHelpResult:
-            """Get documentation and help text for ArgoCD commands."""
-            return await argocd_describe(command, ctx)
+        # Register describe tool
+        _register_describe_tool(mcp, tool_name, display_name)
 
-        @mcp.tool(description="Execute ArgoCD commands with support for Unix pipes.")
-        async def execute_argocd(
-                command: str = Field(description="Complete ArgoCD command to execute (including any pipes and flags)"),
-                timeout: int | None = Field(description="Maximum execution time in seconds (default: 300)",
-                                            default=None),
-                ctx: Context | None = None,
-        ) -> CommandResult:
-            """Execute ArgoCD commands with support for Unix pipes."""
-            return await argocd_execute(command, timeout, ctx)
+        # Register execute tool
+        _register_execute_tool(mcp, tool_name, display_name)
+
+
+def _register_describe_tool(mcp: FastMCP, tool_name: str, display_name: str) -> None:
+    """Register a describe_<tool> function for the given CLI tool."""
+
+    # Create a closure that captures tool_name
+    async def describe_func(
+        command: str | None = Field(
+            description=f"Specific {display_name} command to get help for",
+            default=None
+        ),
+        ctx: Context | None = None,
+    ) -> CommandHelpResult:
+        return await cli_describe(tool_name, command, ctx)
+
+    # Set function metadata for MCP registration
+    describe_func.__name__ = f"describe_{tool_name}"
+    describe_func.__doc__ = f"Get documentation and help text for {display_name} commands."
+
+    # Register with MCP - describe tools are read-only (no side effects)
+    mcp.tool(annotations={"readOnlyHint": True})(describe_func)
+
+
+def _register_execute_tool(mcp: FastMCP, tool_name: str, display_name: str) -> None:
+    """Register an execute_<tool> function for the given CLI tool."""
+
+    # Create a closure that captures tool_name
+    async def execute_func(
+        command: str = Field(
+            description=f"Complete {display_name} command to execute (including any pipes and flags)"
+        ),
+        timeout: int | None = Field(
+            description="Maximum execution time in seconds (default: 300)",
+            default=None
+        ),
+        ctx: Context | None = None,
+    ) -> CommandResult:
+        return await cli_execute(tool_name, command, timeout, ctx)
+
+    # Set function metadata for MCP registration
+    execute_func.__name__ = f"execute_{tool_name}"
+    execute_func.__doc__ = f"Execute {display_name} commands with support for Unix pipes."
+
+    # Register with MCP - execute tools can modify cluster state (destructive)
+    mcp.tool(
+        description=f"Execute {display_name} commands with support for Unix pipes.",
+        annotations={"destructiveHint": True, "openWorldHint": True}
+    )(execute_func)

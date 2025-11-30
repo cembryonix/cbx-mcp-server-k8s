@@ -20,18 +20,18 @@ done
 
 # Check where we are and set the root of repo
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# this script is in {root}/test/
-root_dir="${script_dir}/.."
+# this script is in {root}/tests/scripts/
+root_dir="${script_dir}/../.."
 
 # Check if virtual environment exists and activate it
 if [ -d "${root_dir}/venv" ]; then
-    # echo "Activating virtual environment..."
+    echo "Activating virtual environment..."
     source ${root_dir}/venv/bin/activate
 fi
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
-    #echo "Loading environment variables from .env..."
+    echo "Loading environment variables from .env..."
     export $(cat .env | grep -v '#' | xargs)
 fi
 
@@ -39,12 +39,12 @@ fi
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/app"
 
 # Set config directory based on config name
-CONFIG_DIR="${script_dir}/conf_dirs/${CONFIG_NAME}"
+CONFIG_DIR="${script_dir}/../server-configs/${CONFIG_NAME}"
 
 # Display startup information
-#echo "Starting CBX MCP Server with '$CONFIG_NAME' configuration..."
-#echo "Using config from: $CONFIG_DIR"
-#echo "Press Ctrl+C to stop the server"
+echo "Starting CBX MCP Server with '$CONFIG_NAME' configuration..."
+echo "Using config from: $CONFIG_DIR"
+echo "Press Ctrl+C to stop the server"
 
 # Start the server with the appropriate config directory
 python3 "${root_dir}/app/main.py" --config-dir "$CONFIG_DIR"

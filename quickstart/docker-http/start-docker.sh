@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 gh_owner="cembryonix"
-version="v0.1.1"
+version="v0.2.0"
 
 docker run -it --rm \
   --name cbx-mcp-server-k8s \

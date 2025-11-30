@@ -26,3 +26,24 @@
   }
 }
 ```
+
+## STDIO transport from local code
+```json
+{
+    "mcpServers": {
+      "kubernetes": {
+        "command": "<PATH_TO_CODE_DIR>/cbx-mcp-server-k8s/venv/bin/python",
+        "args": [
+          "<PATH_TO_CODE_DIR>/cbx-mcp-server-k8s/app/main.py",
+          "--config-dir",
+          "<PATH_TO_CODE_DIR>/cbx-mcp-server-k8s/tests/server-configs/stdio"
+        ]
+      }
+    },
+    "preferences": {
+      "quickEntryShortcut": "off",
+      "menuBarEnabled": false
+    }
+  }
+
+```
