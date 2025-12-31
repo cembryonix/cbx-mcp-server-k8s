@@ -1,0 +1,27 @@
+# Server configuration for manual testing
+# Used by start.sh to launch server from source
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+  transport: "streamable-http"
+
+command:
+  default_timeout: 120
+  max_output_size: 200000
+
+security:
+  mode: "strict"
+
+# Application session data storage
+session:
+  persistence: "redis"
+  redis_url: "redis://localhost:6379/0"
+  ttl_seconds: 3600
+
+# MCP protocol event store (for session resumability after pod restart)
+event_store:
+  persistence: "redis"
+  redis_url: "redis://localhost:6379/0"
+  max_events: 1000
+  ttl_seconds: 3600

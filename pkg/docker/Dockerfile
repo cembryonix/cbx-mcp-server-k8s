@@ -1,4 +1,4 @@
-# Single-stage build
+# CBX MCP K8s Server - Docker Build
 ARG PYTHON_VERSION=3.12-slim
 
 FROM python:${PYTHON_VERSION}
@@ -50,36 +50,12 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
     && chmod +x argocd \
     && mv argocd /usr/local/bin/
 
-# Install AWS CLI
-RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"; \
-    else \
-        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"; \
-    fi \
-    && unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf awscliv2.zip aws
-
-ARG OCI_CLI_VERSION=3.63.0
-RUN pip3 install --no-cache-dir \
-    oci-cli==${OCI_CLI_VERSION} \
-    # cleanup of Python packages
-    && find /usr/local/lib/python* -name "*.pyc" -delete \
-    && find /usr/local/lib/python* -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /usr/local/lib/python* -name "*.pyo" -delete \
-    && find /usr/local/lib/python* -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /usr/local/lib/python* -name "test" -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /usr/local/lib/python* -name "*.dist-info" -type d -exec rm -rf {}/RECORD {} + 2>/dev/null || true
-
-# Install only essential runtime dependencies
+# Install runtime dependencies and utilities
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Essential for kubectl/cloud CLIs
     ca-certificates \
-    unzip \
     curl \
     wget \
     less \
-    groff \
     jq \
     gnupg \
     tar \
@@ -94,10 +70,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gawk \
     findutils \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && rm -rf /var/cache/apt/archives/*
+    && rm -rf /var/lib/apt/lists/*
 
-##################
+# Install yq
+ARG YQ_VERSION=v4.44.1
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_arm64; \
+    else \
+        curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64; \
+    fi \
+    && chmod +x /usr/local/bin/yq
 
 # Set up user and directories
 RUN groupadd -g 10001 appgroup \
@@ -107,8 +89,7 @@ RUN groupadd -g 10001 appgroup \
     && mkdir -p /home/appuser/.config/gcloud \
     && mkdir -p /home/appuser/.azure \
     && mkdir -p /home/appuser/.oci \
-    && mkdir -p /home/appuser/app_configs/http \
-    && mkdir -p /home/appuser/app_configs/stdio \
+    && mkdir -p /home/appuser/app_configs \
     && mkdir -p /app/logs \
     && chown -R appuser:appgroup /home/appuser \
     && chown -R appuser:appgroup /app \
@@ -121,24 +102,20 @@ RUN groupadd -g 10001 appgroup \
 
 WORKDIR /app
 
-# Copy and install Python dependencies first (for better caching)
+# Copy and install Python dependencies first (for caching)
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt \
-    # Aggressive cleanup of application dependencies
     && find /usr/local/lib/python3.12/site-packages -name "*.pyc" -delete \
-    && find /usr/local/lib/python3.12/site-packages -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /usr/local/lib/python3.12/site-packages -name "*.pyo" -delete \
-    && find /usr/local/lib/python3.12/site-packages -name "tests" -type d -exec rm -rf {} + 2>/dev/null || true \
-    && find /usr/local/lib/python3.12/site-packages -name "test" -type d -exec rm -rf {} + 2>/dev/null || true
+    && find /usr/local/lib/python3.12/site-packages -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# Copy application code and configs in one go
+# Copy application code
 COPY README.md LICENSE NOTICE ./
 COPY app/main.py ./
 COPY app/cbx_mcp_k8s/ ./cbx_mcp_k8s/
 COPY pkg/docker/entrypoint.sh ./
-COPY pkg/docker/server_configs/default_config.yaml /home/appuser/app_configs/config.yaml
+COPY pkg/docker/server_configs/default_config.yaml /home/appuser/app_configs/settings.yaml
 
-# Fix ownership and permissions for all copied files (consolidated)
+# Fix ownership and permissions
 RUN chmod +x /app/entrypoint.sh \
     && chown -R appuser:appgroup /app \
     && chown -R appuser:appgroup /home/appuser/app_configs
@@ -146,20 +123,19 @@ RUN chmod +x /app/entrypoint.sh \
 # Switch to application user
 USER appuser
 
-# Environment variables with Python optimization
+# Environment variables
 ENV HOME="/home/appuser" \
     PATH="/usr/local/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONOPTIMIZE=1 \
-    CBX_CONFIG_NAME="http"
+    PYTHONOPTIMIZE=1
 
-# Application-specific labels
+# Labels
 LABEL org.opencontainers.image.title="CBX MCP Server for K8S" \
-      org.opencontainers.image.description="CBX MCP server as proxy for CLIs to manage Kubernetes" \
-      org.opencontainers.image.source="https://github.com/cembryonix/cbx-mcp-server-kubernetes"
+      org.opencontainers.image.description="CBX MCP server - proxy for CLIs to manage Kubernetes" \
+      org.opencontainers.image.source="https://github.com/cembryonix/cbx-mcp-server-kubernetes" \
+      org.opencontainers.image.version="0.3.0"
 
 EXPOSE 8080
 
-# Application entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]

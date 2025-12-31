@@ -1,0 +1,27 @@
+# CBX MCP K8s Server v2 - Dependencies
+
+# MCP Framework
+mcp>=1.21.0
+fastmcp>=2.13.0
+
+# Data validation
+pydantic>=2.11.0
+pydantic-settings>=2.0.0
+
+# Configuration
+pyyaml>=6.0
+
+# HTTP server (used by FastMCP for streamable-http transport)
+starlette>=0.40.0
+uvicorn>=0.30.0
+
+# Session backends
+redis>=5.0.0  # Optional: for Redis session persistence
+
+# Utilities
+httpx>=0.27.0  # Async HTTP client (for health checks, etc.)
+
+# Development dependencies (install with pip install -r requirements-dev.txt)
+# pytest>=8.0.0
+# pytest-asyncio>=0.23.0
+# pytest-cov>=4.0.0

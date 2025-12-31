@@ -1,7 +1,8 @@
-# cbx_mcp_k8s/__init__.py
+"""
+CBX MCP Server for Kubernetes Management.
 
-from .server import create_server
+This MCP server provides LLMs with a safe interface to execute
+Kubernetes management CLI commands (kubectl, helm, argocd, aws).
+"""
 
-__all__ = [
-    'create_server'
-]
+__version__ = "0.3.0"

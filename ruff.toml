@@ -1,0 +1,13 @@
+# Ruff configuration for CBX MCP K8s Server
+
+line-length = 100
+
+[lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E402",  # Module import not at top - needed for sys.path manipulation
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py (re-exports)
+"tests/*" = ["F841"]      # Allow unused variables in tests

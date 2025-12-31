@@ -1,5 +1,16 @@
-# middleware/__init__.py
+"""
+MCP Middleware for request preprocessing.
 
-from .tool_call_preprocessor import ToolCallPreprocessor
+Contains:
+- ToolCallPreprocessor: Filters unexpected parameters from tool calls
+"""
 
-__all__ = ['ToolCallPreprocessor']
+from cbx_mcp_k8s.middleware.preprocessor import (
+    ToolCallPreprocessor,
+    create_preprocessor,
+)
+
+__all__ = [
+    "ToolCallPreprocessor",
+    "create_preprocessor",
+]

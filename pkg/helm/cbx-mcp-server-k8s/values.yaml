@@ -1,0 +1,67 @@
+# values.yaml for cbx-mcp-server-k8s
+
+image:
+  repository: ghcr.io/cembryonix/cbx-mcp-server-k8s
+  tag: "0.3.0"
+  pullPolicy: IfNotPresent
+
+service:
+  name: cbx-mcp-server-k8s
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  host: cbx-mcp-k8s.yourdomain.com  # Change this to your domain
+  path: /mcp/
+  pathType: Prefix
+
+# Secret references - these secrets must exist before deployment
+secretReferences:
+  kubeconfig:
+    secretName: "cbx-mcp-k8s-kubeconfig"
+    secretKey: "config"
+  argocdConfig:
+    secretName: "cbx-mcp-k8s-argocd-config"
+    secretKey: "config"
+
+# MCP Server configuration
+config: |
+  server:
+    host: "0.0.0.0"
+    port: 8080
+    transport: "streamable-http"
+    log_level: "info"
+
+  session:
+    persistence: "memory"
+    ttl_seconds: 3600
+
+  command:
+    default_timeout: 120
+    max_output_size: 100000
+
+  security:
+    security_mode: "strict"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+replicaCount: 1
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Environment variables
+env:
+  HOME: "/home/appuser"
+  CBX_MCP_TRANSPORT: "streamable-http"

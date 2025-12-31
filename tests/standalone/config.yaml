@@ -1,0 +1,18 @@
+# Standalone test scripts configuration
+# Common settings for all standalone test scripts
+
+mcp_server:
+  # Path to Python interpreter (use venv)
+  python: "/Users/vkuusk/work/cbx-mcp-server-k8s/venv/bin/python"
+
+  # Path to main.py
+  main: "/Users/vkuusk/work/cbx-mcp-server-k8s/v2/app/main.py"
+
+  # Server config directory
+  config_dir: "/Users/vkuusk/work/cbx-mcp-server-k8s/v2/tests/run-server/from-source"
+
+  # Transport mode (stdio for direct testing)
+  transport: "stdio"
+
+# Default timeout for commands (seconds)
+default_timeout: 60

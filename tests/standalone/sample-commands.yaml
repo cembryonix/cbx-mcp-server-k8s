@@ -1,0 +1,17 @@
+# Sample commands for execute-commands.py
+# Format: tool_name: command
+
+# Basic kubectl commands
+kubectl: get namespaces
+kubectl: get pods -n default
+kubectl: get pods --all-namespaces | head -10
+
+# Pipe examples
+kubectl: get ns | wc -l
+kubectl: get events --all-namespaces --field-selector type=Warning | tail -10
+
+# Helm commands (if helm is installed)
+helm: list -A
+
+# ArgoCD commands (if argocd is installed and logged in)
+# argocd: app list

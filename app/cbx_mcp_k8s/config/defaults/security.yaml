@@ -1,0 +1,146 @@
+# CBX MCP K8s Server - Security Configuration
+# Default security settings - secure by default
+
+security:
+  mode: "strict"  # strict | permissive (permissive disables all validation)
+
+  # Dangerous command prefixes that are blocked by default
+  # These can be overridden by safe_patterns
+  dangerous_commands:
+    kubectl:
+      - "kubectl delete"
+      - "kubectl drain"
+      - "kubectl cordon"
+      - "kubectl uncordon"
+      - "kubectl taint"
+      - "kubectl label"
+      - "kubectl annotate"
+      - "kubectl patch"
+      - "kubectl replace"
+      - "kubectl apply"
+      - "kubectl create"
+      - "kubectl edit"
+      - "kubectl set"
+      - "kubectl scale"
+      - "kubectl rollout"
+      - "kubectl autoscale"
+      - "kubectl expose"
+      - "kubectl run"
+      - "kubectl attach"
+      - "kubectl exec"
+      - "kubectl cp"
+      - "kubectl port-forward"
+      - "kubectl proxy"
+      - "kubectl debug"
+
+    helm:
+      - "helm delete"
+      - "helm uninstall"
+      - "helm install"
+      - "helm upgrade"
+      - "helm rollback"
+      - "helm repo add"
+      - "helm repo remove"
+      - "helm repo update"
+      - "helm plugin install"
+      - "helm plugin uninstall"
+
+    argocd:
+      - "argocd app delete"
+      - "argocd app create"
+      - "argocd app set"
+      - "argocd app sync"
+      - "argocd app terminate-op"
+      - "argocd app rollback"
+      - "argocd app actions run"
+      - "argocd cluster add"
+      - "argocd cluster rm"
+      - "argocd repo add"
+      - "argocd repo rm"
+      - "argocd proj create"
+      - "argocd proj delete"
+
+    aws:
+      - "aws ec2 terminate"
+      - "aws ec2 delete"
+      - "aws eks delete"
+      - "aws iam delete"
+      - "aws s3 rm"
+      - "aws s3 rb"
+
+  # Safe patterns - exceptions to dangerous commands
+  # These patterns are allowed even if they match dangerous_commands
+  safe_patterns:
+    kubectl:
+      # Allow specific resource deletions (with explicit resource names)
+      - "kubectl delete pod"
+      - "kubectl delete deployment"
+      - "kubectl delete service"
+      - "kubectl delete configmap"
+      - "kubectl delete secret"
+      - "kubectl delete job"
+      - "kubectl delete cronjob"
+      - "kubectl delete ingress"
+      - "kubectl delete pvc"
+      - "kubectl delete hpa"
+      # Allow help commands
+      - "kubectl exec --help"
+      - "kubectl cp --help"
+      # Allow interactive exec (explicit user intent)
+      - "kubectl exec -it"
+      - "kubectl exec -ti"
+      # Allow read-only exec commands
+      - "kubectl exec"  # With shell commands via -c flag
+
+    helm:
+      - "helm install --dry-run"
+      - "helm upgrade --dry-run"
+      - "helm delete --dry-run"
+      - "helm uninstall --dry-run"
+
+    argocd:
+      - "argocd app sync --dry-run"
+      - "argocd app delete --cascade=false"
+
+  # Regex-based rules for advanced pattern matching
+  # These are applied after prefix matching
+  regex_rules:
+    kubectl:
+      # Block destructive operations across all namespaces
+      # But allow read-only operations (get, describe, logs, top, events)
+      - pattern: "kubectl\\s+(delete|apply|create|patch|replace|edit|scale|rollout|drain)\\s+.*\\s+--all-namespaces\\b"
+        action: "block"
+        message: "Destructive operations across all namespaces are restricted"
+
+      - pattern: "kubectl\\s+delete\\s+.*\\s+--all(?!-namespaces)\\b"
+        action: "block"
+        message: "Deleting all resources of a type is restricted"
+
+      - pattern: "kubectl\\s+.*\\s+-n\\s+kube-system\\b"
+        action: "block"
+        message: "Operations in kube-system namespace are restricted"
+
+      - pattern: "kubectl\\s+.*\\s+--namespace\\s+kube-system\\b"
+        action: "block"
+        message: "Operations in kube-system namespace are restricted"
+
+    helm:
+      - pattern: "helm\\s+uninstall\\s+.*\\s+--no-hooks\\b"
+        action: "block"
+        message: "Uninstall without hooks is restricted"
+
+  # Unix commands allowed in pipe chains
+  allowed_unix_commands:
+    - "grep"
+    - "awk"
+    - "sed"
+    - "head"
+    - "tail"
+    - "sort"
+    - "uniq"
+    - "wc"
+    - "cut"
+    - "tr"
+    - "jq"
+    - "yq"
+    - "xargs"
