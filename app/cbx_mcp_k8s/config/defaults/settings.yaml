@@ -1,0 +1,16 @@
+# CBX MCP K8s Server - Default Settings
+# These are built-in defaults. Override with user config or environment variables.
+
+server:
+  host: "127.0.0.1"
+  port: 8080
+  transport: "streamable-http"  # or "stdio"
+
+session:
+  persistence: "memory"  # memory | redis | sticky
+  ttl_seconds: 3600
+  # redis_url: "redis://localhost:6379/0"  # Required if persistence=redis
+
+command:
+  default_timeout: 60
+  max_output_size: 100000

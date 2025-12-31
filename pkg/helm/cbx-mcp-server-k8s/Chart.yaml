@@ -1,0 +1,22 @@
+apiVersion: v2
+name: cbx-mcp-server-k8s
+description: CBX MCP Server for Kubernetes - LLM interface to K8s CLI tools
+
+type: application
+
+# Chart version
+version: 0.3.0
+
+# Application version
+appVersion: "0.3.0"
+
+maintainers:
+  - name: cembryonix
+
+keywords:
+  - mcp
+  - kubernetes
+  - llm
+  - kubectl
+  - helm
+  - argocd

@@ -1,0 +1,16 @@
+# Test configuration for integration tests
+# This overrides defaults from v2/app/cbx_mcp_k8s/config/defaults/
+
+server:
+  host: "127.0.0.1"
+  port: 8765
+  transport: "streamable-http"
+  log_level: "info"
+
+session:
+  persistence: "memory"
+  ttl_seconds: 300
+
+command:
+  default_timeout: 30
+  max_output_size: 50000

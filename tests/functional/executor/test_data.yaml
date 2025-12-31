@@ -1,0 +1,323 @@
+# Test data for executor functional tests
+# This file contains test cases for parser, validator, and runner
+
+# =============================================================================
+# Parser Test Cases
+# =============================================================================
+parser_tests:
+  kubectl:
+    - name: "simple get pods"
+      command: "kubectl get pods"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "pod"
+
+    - name: "get pods with namespace flag"
+      command: "kubectl get pods -n default"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "pod"
+        flags:
+          "-n": "default"
+
+    - name: "get pods with long namespace flag"
+      command: "kubectl get pods --namespace=kube-system"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "pod"
+        flags:
+          "--namespace": "kube-system"
+
+    - name: "delete pod with name"
+      command: "kubectl delete pod nginx-pod -n default"
+      expected:
+        tool: "kubectl"
+        action: "delete"
+        resource: "pod"
+        name: "nginx-pod"
+
+    - name: "exec with interactive flags"
+      command: "kubectl exec -it my-pod -- /bin/bash"
+      expected:
+        tool: "kubectl"
+        action: "exec"
+        flags:
+          "-it": null
+
+    - name: "resource alias pods to pod"
+      command: "kubectl get pods"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "pod"
+
+    - name: "resource alias svc to service"
+      command: "kubectl get svc"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "service"
+
+    - name: "resource alias deploy to deployment"
+      command: "kubectl get deploy"
+      expected:
+        tool: "kubectl"
+        action: "get"
+        resource: "deployment"
+
+  helm:
+    - name: "helm install"
+      command: "helm install myrelease ./chart --namespace prod"
+      expected:
+        tool: "helm"
+        action: "install"
+        name: "myrelease"
+        flags:
+          "--namespace": "prod"
+
+    - name: "helm upgrade with dry-run"
+      command: "helm upgrade myrelease ./chart --dry-run"
+      expected:
+        tool: "helm"
+        action: "upgrade"
+        name: "myrelease"
+        flags:
+          "--dry-run": null
+
+    - name: "helm list"
+      command: "helm list -A"
+      expected:
+        tool: "helm"
+        action: "list"
+
+  argocd:
+    - name: "argocd app list"
+      command: "argocd app list"
+      expected:
+        tool: "argocd"
+        action: "app list"
+        resource: "app"
+
+    - name: "argocd app sync"
+      command: "argocd app sync myapp --prune"
+      expected:
+        tool: "argocd"
+        action: "app sync"
+        name: "myapp"
+        flags:
+          "--prune": null
+
+  aws:
+    - name: "aws eks list-clusters"
+      command: "aws eks list-clusters --region us-west-2"
+      expected:
+        tool: "aws"
+        action: "eks list-clusters"
+        resource: "eks"
+        flags:
+          "--region": "us-west-2"
+
+# =============================================================================
+# Pipe Command Test Cases
+# =============================================================================
+pipe_tests:
+  - name: "kubectl with grep"
+    command: "kubectl get pods | grep nginx"
+    is_pipe: true
+    segments:
+      - "kubectl get pods"
+      - "grep nginx"
+
+  - name: "kubectl with jq"
+    command: "kubectl get pods -o json | jq '.items[].metadata.name'"
+    is_pipe: true
+    segments:
+      - "kubectl get pods -o json"
+      - "jq '.items[].metadata.name'"
+
+  - name: "no pipe in simple command"
+    command: "kubectl get pods"
+    is_pipe: false
+
+  - name: "pipe in quoted string should not split"
+    command: "kubectl get pods -l 'app=test|prod'"
+    is_pipe: false
+
+# =============================================================================
+# Validator Test Cases
+# =============================================================================
+validator_tests:
+  allowed:
+    - name: "get pods is allowed"
+      command: "kubectl get pods"
+      reason: "Read-only command"
+
+    - name: "describe deployment is allowed"
+      command: "kubectl describe deployment nginx"
+      reason: "Read-only command"
+
+    - name: "helm list is allowed"
+      command: "helm list"
+      reason: "Read-only command"
+
+    - name: "helm status is allowed"
+      command: "helm status myrelease"
+      reason: "Read-only command"
+
+    - name: "delete pod is allowed (safe pattern)"
+      command: "kubectl delete pod nginx-pod"
+      reason: "Matches safe pattern for specific pod deletion"
+
+    - name: "delete deployment is allowed (safe pattern)"
+      command: "kubectl delete deployment nginx"
+      reason: "Matches safe pattern for specific deployment deletion"
+
+    - name: "helm dry-run install is allowed"
+      command: "helm install myrelease ./chart --dry-run"
+      reason: "Dry-run is safe"
+
+    - name: "kubectl exec with -it is allowed"
+      command: "kubectl exec -it nginx-pod -- /bin/bash"
+      reason: "Explicit interactive mode"
+
+    - name: "pipe with allowed unix command"
+      command: "kubectl get pods | grep nginx"
+      reason: "grep is in allowed_unix_commands"
+
+  blocked:
+    - name: "kubectl delete without resource name"
+      command: "kubectl delete pods"
+      reason: "No specific resource - could delete multiple"
+
+    - name: "kubectl delete with --all flag"
+      command: "kubectl delete pods --all"
+      reason: "Blocked by regex rule for --all flag"
+
+    - name: "kubectl in kube-system namespace"
+      command: "kubectl get pods -n kube-system"
+      reason: "Blocked by regex rule for kube-system"
+
+    - name: "helm uninstall"
+      command: "helm uninstall myrelease"
+      reason: "Dangerous command without safe pattern match"
+
+    - name: "helm uninstall with --no-hooks"
+      command: "helm uninstall myrelease --no-hooks"
+      reason: "Blocked by regex rule"
+
+    - name: "argocd app delete"
+      command: "argocd app delete myapp"
+      reason: "Dangerous command"
+
+    - name: "aws ec2 terminate"
+      command: "aws ec2 terminate-instances --instance-ids i-1234"
+      reason: "Dangerous AWS command"
+
+    - name: "pipe with disallowed unix command"
+      command: "kubectl get pods | rm -rf /"
+      reason: "rm is not in allowed_unix_commands"
+
+    - name: "kubectl all-namespaces operation"
+      command: "kubectl delete pods --all-namespaces"
+      reason: "Blocked by regex rule"
+
+# =============================================================================
+# Runner Test Cases (for actual execution)
+# =============================================================================
+runner_tests:
+  # These tests use real commands that should work on any system
+  success:
+    - name: "echo command"
+      command: "echo hello world"
+      expected_stdout_contains: "hello world"
+      expected_exit_code: 0
+
+    - name: "echo with pipe"
+      command: "echo 'hello world' | grep hello"
+      expected_stdout_contains: "hello"
+      expected_exit_code: 0
+
+  timeout:
+    - name: "sleep command times out"
+      command: "sleep 10"
+      timeout: 1
+      expected_status: "timeout"
+
+  blocked:
+    - name: "blocked command returns blocked status"
+      command: "kubectl delete pods --all"
+      expected_status: "blocked"
+
+# =============================================================================
+# Security Config for Tests
+# =============================================================================
+test_security_config:
+  mode: "strict"
+
+  dangerous_commands:
+    kubectl:
+      - "kubectl delete"
+      - "kubectl drain"
+      - "kubectl exec"
+      - "kubectl apply"
+      - "kubectl create"
+    helm:
+      - "helm delete"
+      - "helm uninstall"
+      - "helm install"
+      - "helm upgrade"
+    argocd:
+      - "argocd app delete"
+      - "argocd app sync"
+    aws:
+      - "aws ec2 terminate"
+      - "aws eks delete"
+
+  safe_patterns:
+    kubectl:
+      - "kubectl delete pod"
+      - "kubectl delete deployment"
+      - "kubectl delete service"
+      - "kubectl exec -it"
+      - "kubectl exec -ti"
+      - "kubectl exec --help"
+    helm:
+      - "helm install --dry-run"
+      - "helm upgrade --dry-run"
+
+  regex_rules:
+    kubectl:
+      - pattern: "kubectl\\s+.*\\s+--all-namespaces\\b"
+        action: "block"
+        message: "Operations across all namespaces are restricted"
+      - pattern: "kubectl\\s+delete\\s+.*\\s+--all(?!-namespaces)\\b"
+        action: "block"
+        message: "Deleting all resources is restricted"
+      - pattern: "kubectl\\s+.*\\s+-n\\s+kube-system\\b"
+        action: "block"
+        message: "Operations in kube-system namespace are restricted"
+      - pattern: "kubectl\\s+.*\\s+--namespace\\s+kube-system\\b"
+        action: "block"
+        message: "Operations in kube-system namespace are restricted"
+    helm:
+      - pattern: "helm\\s+uninstall\\s+.*\\s+--no-hooks\\b"
+        action: "block"
+        message: "Uninstall without hooks is restricted"
+
+  allowed_unix_commands:
+    - "grep"
+    - "awk"
+    - "sed"
+    - "head"
+    - "tail"
+    - "sort"
+    - "uniq"
+    - "wc"
+    - "cut"
+    - "tr"
+    - "jq"
+    - "yq"
+    - "cat"  # Added for testing pipe commands

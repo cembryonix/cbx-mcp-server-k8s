@@ -1,16 +1,19 @@
-# MCP server run() params
+# CBX MCP K8s Server - Default Docker Configuration
+# This config is used when running in Docker container
+
 server:
-  server_name: "cbx-mcp-k8s-server"
-  transport_type: "http"
   host: "0.0.0.0"
   port: 8080
-  log_level: "INFO"
+  transport: "streamable-http"
+  log_level: "info"
+
+session:
+  persistence: "memory"
+  ttl_seconds: 3600
 
 command:
-  default_timeout: 120
+  default_timeout: 60
   max_output_size: 100000
 
-security:
-  security_config_path: None   # use DEFAULTS if None
-  security_mode: "strict" # strict or permissive
-
+# Security settings are loaded from defaults
+# Override here if needed for production

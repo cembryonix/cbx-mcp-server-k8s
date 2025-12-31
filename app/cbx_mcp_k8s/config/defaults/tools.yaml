@@ -1,0 +1,58 @@
+# Tool Configuration
+# Defines available tools and their registration settings
+
+# CLI Tools - external binaries executed via subprocess
+# Subject to security validation
+cli_tools:
+  kubectl:
+    required: true
+    check_cmd: "kubectl version --client --output=json"
+    test_cmd: "kubectl auth can-i get nodes"
+    help_flag: "--help"
+    description: "Kubernetes command-line tool for cluster management"
+    example: "kubectl get pods --all-namespaces"
+
+  helm:
+    required: true
+    check_cmd: "helm version --short"
+    test_cmd: "helm list --short"
+    help_flag: "--help"
+    description: "Kubernetes package manager for deploying applications"
+    example: "helm list --all-namespaces"
+
+  argocd:
+    required: false
+    check_cmd: "argocd version --client"
+    test_cmd: "argocd app list --output name"
+    help_flag: "--help"
+    description: "GitOps continuous delivery tool for Kubernetes"
+    example: "argocd app list"
+
+# Python Tools - implemented in this package
+# JSON params input, no security validation (trusted internal code)
+python_tools:
+  # Example: eksinfo tool (placeholder - implement when needed)
+  # eksinfo:
+  #   required: false
+  #   check_cmd: "eksinfo --version"
+  #   test_cmd: "eksinfo list regions"
+  #   help_flag: "--help"
+  #   description: "Get info about AWS resources related to EKS"
+  #   example: '{"cluster_name": "myEks-01", "arguments": ["list", "LB"]}'
+  #   parameters:
+  #     cluster_name:
+  #       type: string
+  #       description: "EKS cluster name"
+  #       required: true
+  #     aws_region:
+  #       type: string
+  #       description: "AWS region"
+  #       required: true
+  #     aws_profile:
+  #       type: string
+  #       description: "AWS profile name"
+  #       default: "default"
+  #     arguments:
+  #       type: list
+  #       description: "Command arguments"
+  #       required: true
