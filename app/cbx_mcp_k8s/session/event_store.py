@@ -12,16 +12,37 @@ Redis Streams are ideal for this use case:
 - Efficient range queries (XRANGE)
 - Automatic ID generation (timestamp-based)
 - TTL support via XTRIM
+
+Note: Each server instance gets a unique ID to prevent key collisions
+when multiple instances share the same Redis.
 """
 
 import json
 import logging
+import os
+import uuid
 from collections.abc import Awaitable, Callable
 
 from mcp.server.streamable_http import EventMessage, EventStore
 from mcp.types import JSONRPCMessage
 
 logger = logging.getLogger(__name__)
+
+
+def _generate_instance_id() -> str:
+    """
+    Generate a unique instance ID for this server process.
+
+    Uses K8s pod name if available, otherwise generates a short UUID.
+    This ensures Redis keys are unique across multiple instances.
+    """
+    # Try K8s pod name first (set by downward API)
+    pod_name = os.environ.get("HOSTNAME") or os.environ.get("POD_NAME")
+    if pod_name:
+        return pod_name
+
+    # Fall back to short UUID (first 8 chars)
+    return uuid.uuid4().hex[:8]
 
 # Type aliases matching MCP SDK
 StreamId = str
@@ -34,8 +55,11 @@ class RedisEventStore(EventStore):
     Redis Streams-backed event store for MCP session resumability.
 
     Stores events in Redis Streams with format:
-        Key: {prefix}:stream:{stream_id}
+        Key: {prefix}:{instance_id}:stream:{stream_id}
         Fields: {"message": <json>, "type": "event"}
+
+    Each server instance gets a unique instance_id to prevent key
+    collisions when multiple instances share the same Redis.
 
     Event IDs use Redis Stream auto-generated IDs (timestamp-sequence).
     """
@@ -46,6 +70,7 @@ class RedisEventStore(EventStore):
         prefix: str = "mcp:events",
         max_events_per_stream: int = 1000,
         ttl_seconds: int = 3600,
+        instance_id: str | None = None,
     ):
         """
         Initialize Redis event store.
@@ -55,9 +80,11 @@ class RedisEventStore(EventStore):
             prefix: Key prefix for Redis streams
             max_events_per_stream: Max events to keep per stream (older trimmed)
             ttl_seconds: TTL for streams (approximate, via periodic cleanup)
+            instance_id: Unique ID for this server instance (auto-generated if None)
         """
         self.redis_url = redis_url
-        self.prefix = prefix
+        self.instance_id = instance_id or _generate_instance_id()
+        self.prefix = f"{prefix}:{self.instance_id}"
         self.max_events = max_events_per_stream
         self.ttl_seconds = ttl_seconds
         self._client = None
@@ -77,7 +104,10 @@ class RedisEventStore(EventStore):
 
         self._client = redis.from_url(self.redis_url)
         await self._client.ping()
-        logger.info(f"RedisEventStore connected to {self.redis_url}")
+        logger.info(
+            f"RedisEventStore connected (instance_id={self.instance_id}, "
+            f"prefix={self.prefix})"
+        )
 
     async def disconnect(self) -> None:
         """Disconnect from Redis."""
