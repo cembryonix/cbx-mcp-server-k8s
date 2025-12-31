@@ -16,10 +16,9 @@ Redis Streams are ideal for this use case:
 
 import json
 import logging
-from collections.abc import Callable, Awaitable
-from typing import Any
+from collections.abc import Awaitable, Callable
 
-from mcp.server.streamable_http import EventStore, EventMessage
+from mcp.server.streamable_http import EventMessage, EventStore
 from mcp.types import JSONRPCMessage
 
 logger = logging.getLogger(__name__)

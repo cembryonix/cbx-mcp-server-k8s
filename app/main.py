@@ -18,7 +18,7 @@ if str(APP_DIR) not in sys.path:
 
 from cbx_mcp_k8s import __version__
 from cbx_mcp_k8s.config import load_config
-from cbx_mcp_k8s.server import ServerBundle, create_server
+from cbx_mcp_k8s.server import create_server
 
 
 def parse_args() -> argparse.Namespace:
@@ -129,7 +129,7 @@ def main() -> int:
             # This enables session resumability after pod restarts
             if bundle.event_store:
                 print(
-                    f"Event store enabled for session resumability",
+                    "Event store enabled for session resumability",
                     file=sys.stderr,
                 )
                 # Create ASGI app with event store and run with uvicorn
