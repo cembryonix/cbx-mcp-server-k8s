@@ -30,7 +30,6 @@ Cleanup:
 """
 
 import argparse
-import json
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -132,7 +131,7 @@ class RedisTestSuite:
         # They will expire via TTL (default 3600s)
 
         print(f"  Deleted {deleted_count} session key(s)")
-        print(f"  Event streams will expire via TTL (not deleted to avoid affecting other sessions)")
+        print("  Event streams will expire via TTL (not deleted to avoid affecting other sessions)")
         print()
 
     def _run_test(self, test_func):
@@ -329,7 +328,7 @@ class RedisTestSuite:
 
         # All sessions should be unique
         assert len(set(sessions)) == 3, "Sessions are not unique"
-        self.log(f"Created 3 unique sessions")
+        self.log("Created 3 unique sessions")
 
 
 def main():
