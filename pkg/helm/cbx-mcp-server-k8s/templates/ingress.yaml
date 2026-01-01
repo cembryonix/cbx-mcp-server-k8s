@@ -21,7 +21,7 @@ spec:
             pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
-                name: {{ include "cbx-mcp-server-k8s.fullname" . }}
+                name: {{ .Values.service.name | default (include "cbx-mcp-server-k8s.fullname" .) }}
                 port:
                   number: {{ .Values.service.port }}
           {{- if ne .Values.ingress.path "/" }}
@@ -29,7 +29,7 @@ spec:
             pathType: Exact
             backend:
               service:
-                name: {{ include "cbx-mcp-server-k8s.fullname" . }}
+                name: {{ .Values.service.name | default (include "cbx-mcp-server-k8s.fullname" .) }}
                 port:
                   number: {{ .Values.service.port }}
           {{- end }}
