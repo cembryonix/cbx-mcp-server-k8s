@@ -38,8 +38,8 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: mcp-config
-              mountPath: /home/appuser/app_configs/settings.yaml
-              subPath: settings.yaml
+              mountPath: /home/appuser/app_configs/config.yaml
+              subPath: config.yaml
             - name: kubeconfig
               mountPath: /home/appuser/.kube/config
               subPath: config
