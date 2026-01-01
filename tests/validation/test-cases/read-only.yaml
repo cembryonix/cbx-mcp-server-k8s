@@ -1,0 +1,92 @@
+# K8s Read-Only Tool Tests
+# =========================
+# These tests validate read-only operations that don't modify cluster state.
+
+category: read-only
+description: "Read-only K8s operations (safe to run anytime)"
+
+tests:
+  # kubectl read operations
+  - name: "kubectl_version"
+    description: "Get kubectl client version"
+    tool: k8s_kubectl_execute
+    command: "version --client -o yaml"
+    expect:
+      success: true
+      output_contains: "clientVersion"
+
+  - name: "kubectl_get_namespaces"
+    description: "List all namespaces"
+    tool: k8s_kubectl_execute
+    command: "get namespaces"
+    expect:
+      success: true
+      output_contains: "default"
+
+  - name: "kubectl_get_pods_all"
+    description: "List pods in all namespaces"
+    tool: k8s_kubectl_execute
+    command: "get pods -A"
+    expect:
+      success: true
+
+  - name: "kubectl_get_nodes"
+    description: "List cluster nodes"
+    tool: k8s_kubectl_execute
+    command: "get nodes"
+    expect:
+      success: true
+
+  - name: "kubectl_cluster_info"
+    description: "Get cluster info"
+    tool: k8s_kubectl_execute
+    command: "cluster-info"
+    expect:
+      success: true
+      output_contains: "Kubernetes"
+
+  - name: "kubectl_api_resources"
+    description: "List API resources"
+    tool: k8s_kubectl_execute
+    command: "api-resources --namespaced=true"
+    expect:
+      success: true
+
+  # helm read operations
+  - name: "helm_version"
+    description: "Get helm version"
+    tool: k8s_helm_execute
+    command: "version"
+    expect:
+      success: true
+      output_contains: "version"
+
+  - name: "helm_list_all"
+    description: "List all helm releases"
+    tool: k8s_helm_execute
+    command: "list -A"
+    expect:
+      success: true
+
+  - name: "helm_repo_list"
+    description: "List helm repositories"
+    tool: k8s_helm_execute
+    command: "repo list"
+    expect:
+      success: true
+
+  # argocd read operations
+  - name: "argocd_version"
+    description: "Get argocd CLI version"
+    tool: k8s_argocd_execute
+    command: "version --client"
+    expect:
+      success: true
+      output_contains: "argocd"
+
+  - name: "argocd_app_list"
+    description: "List ArgoCD applications"
+    tool: k8s_argocd_execute
+    command: "app list"
+    expect:
+      success: true

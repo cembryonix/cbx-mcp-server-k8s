@@ -1,0 +1,43 @@
+# MCP Protocol Compliance Tests
+# ==============================
+# These tests validate MCP protocol compliance and completeness.
+
+category: protocol
+description: "MCP protocol compliance and completeness tests"
+
+tests:
+  # Initialize/handshake
+  - name: "protocol_initialize"
+    description: "MCP protocol initialization handshake"
+    type: protocol
+    action: initialize
+    expect:
+      has_protocol_version: true
+      has_capabilities: true
+
+  # Tools discovery
+  - name: "protocol_tools_list"
+    description: "List available tools via tools/list"
+    type: protocol
+    action: tools_list
+    expect:
+      has_tools: true
+      min_tool_count: 1
+
+  # Tool schema validation
+  - name: "protocol_tool_schema"
+    description: "All tools have valid inputSchema"
+    type: protocol
+    action: validate_schemas
+    expect:
+      all_have_name: true
+      all_have_input_schema: true
+      no_null_schemas: true
+
+  # Expected tools present
+  - name: "protocol_expected_tools"
+    description: "All expected tools are available"
+    type: protocol
+    action: check_expected_tools
+    expect:
+      all_present: true

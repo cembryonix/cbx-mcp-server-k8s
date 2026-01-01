@@ -1,0 +1,70 @@
+# K8s Action Tool Tests
+# ======================
+# These tests validate operations that modify cluster state.
+# Use with caution - these create/modify resources.
+
+category: actions
+description: "K8s operations that modify cluster state"
+
+# Namespace for test resources (will be created/cleaned up)
+test_namespace: "mcp-validation-test"
+
+tests:
+  # Describe operations (read-only but tests describe capability)
+  - name: "kubectl_describe_namespace"
+    description: "Describe default namespace"
+    tool: k8s_kubectl_execute
+    command: "describe namespace default"
+    expect:
+      success: true
+      output_contains: "Name:"
+
+  - name: "kubectl_get_configmaps"
+    description: "List configmaps in kube-system"
+    tool: k8s_kubectl_execute
+    command: "get configmaps -n kube-system"
+    expect:
+      success: true
+
+  # Apply operations (dry-run)
+  - name: "kubectl_apply_dry_run"
+    description: "Apply manifest (dry-run)"
+    tool: k8s_kubectl_execute
+    command: "apply -f - --dry-run=client -o yaml <<EOF\napiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: validation-test\n  namespace: default\ndata:\n  test: value\nEOF"
+    expect:
+      success: true
+    cleanup: false
+
+  # Helm operations (read-only, no external repos needed)
+  - name: "helm_list"
+    description: "List installed releases"
+    tool: k8s_helm_execute
+    command: "list -A -o yaml"
+    expect:
+      success: true
+
+  - name: "helm_env"
+    description: "Show helm environment"
+    tool: k8s_helm_execute
+    command: "env"
+    expect:
+      success: true
+      output_contains: "HELM"
+
+  # ArgoCD operations
+  - name: "argocd_app_get"
+    description: "Get application details"
+    tool: k8s_argocd_execute
+    command: "app get argocd/root-app -o yaml"
+    expect:
+      success: true
+    skip_if_no_app: true
+
+  - name: "argocd_app_diff"
+    description: "Show application diff"
+    tool: k8s_argocd_execute
+    command: "app diff argocd/root-app"
+    expect:
+      # diff returns non-zero if there are differences
+      success: true
+    skip_if_no_app: true
