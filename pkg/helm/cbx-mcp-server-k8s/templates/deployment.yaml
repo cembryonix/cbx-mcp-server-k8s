@@ -27,6 +27,13 @@ spec:
               value: {{ .Values.env.HOME | default "/home/appuser" | quote }}
             - name: CBX_MCP_TRANSPORT
               value: {{ .Values.env.CBX_MCP_TRANSPORT | default "streamable-http" | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:

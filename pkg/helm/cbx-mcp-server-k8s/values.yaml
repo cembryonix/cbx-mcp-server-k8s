@@ -65,3 +65,20 @@ affinity: {}
 env:
   HOME: "/home/appuser"
   CBX_MCP_TRANSPORT: "streamable-http"
+
+# Extra environment variables (list format)
+# Example:
+# extraEnv:
+#   - name: REDIS_URL
+#     valueFrom:
+#       secretKeyRef:
+#         name: redis-credentials
+#         key: url
+extraEnv: []
+
+# Extra environment variables from ConfigMaps/Secrets (envFrom)
+# Example:
+# extraEnvFrom:
+#   - secretRef:
+#       name: redis-credentials
+extraEnvFrom: []
