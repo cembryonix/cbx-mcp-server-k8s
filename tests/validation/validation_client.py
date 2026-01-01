@@ -231,7 +231,7 @@ class MCPValidationClient:
 
                 for tool in tools:
                     if not hasattr(tool, "name") or not tool.name:
-                        issues.append(f"Tool missing name")
+                        issues.append("Tool missing name")
                     if not hasattr(tool, "args_schema"):
                         issues.append(f"{tool.name}: missing args_schema")
 
@@ -329,7 +329,7 @@ class MCPValidationClient:
                 return TestResult(
                     name=test.name,
                     status=TestStatus.FAILED,
-                    message=f"Expected success but got error",
+                    message="Expected success but got error",
                     duration_ms=(time.time() - start) * 1000,
                     details={"output": str(content)[:500]},
                 )
