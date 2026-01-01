@@ -1,29 +1,29 @@
 # Validation Client Configuration
-# Used by validation_client.py to test MCP server compatibility
+# ================================
 
 server:
   # Server URL for streamable-http transport
-  url: "http://127.0.0.1:8765/mcp"
+  url: "http://127.0.0.1:8080/mcp"
 
-  # Transport protocol: streamable_http, sse, stdio
+  # Transport protocol
   transport: "streamable_http"
 
-  # Connection timeout in seconds
+  # Request timeout in seconds
   timeout: 30
 
-# Test settings
 tests:
-  # Skip slow tests
-  skip_slow: false
+  # Enable verbose output
+  verbose: false
 
-  # Verbose output
-  verbose: true
+  # Stop on first failure
+  fail_fast: false
 
-  # Expected tools (for compatibility validation)
-  expected_tools:
-    - k8s_ping  # Basic ping tool (always available)
-    # Future tools to be added:
-    # - execute_kubectl
-    # - describe_kubectl
-    # - execute_helm
-    # - describe_helm
+  # Test categories to run (empty = all)
+  # Options: protocol, read-only, actions
+  categories: []
+
+# Expected tools that should be available
+expected_tools:
+  - k8s_kubectl_execute
+  - k8s_helm_execute
+  - k8s_argocd_execute
