@@ -66,6 +66,9 @@ class ToolCallPreprocessor(Middleware):
         """
         Filter arguments to ONLY keep parameters defined in the tool's schema.
 
+        While MiddlewareContext is frozen, the message.arguments attribute
+        is mutable and can be directly reassigned.
+
         Args:
             context: Middleware context with message data
         """
@@ -79,9 +82,17 @@ class ToolCallPreprocessor(Middleware):
         original_args = dict(message.arguments)
 
         # Get the tool definition using FastMCP API
+        # Note: fastmcp_context.fastmcp is the correct attribute path
         try:
-            fastmcp = context.fastmcp
-            tool = await fastmcp.get_tool(tool_name)
+            fastmcp_ctx = context.fastmcp_context
+            if fastmcp_ctx is None:
+                if self.verbose:
+                    print(
+                        f"[Preprocessor] No fastmcp_context for tool '{tool_name}'",
+                        file=sys.stderr,
+                    )
+                return
+            tool = await fastmcp_ctx.fastmcp.get_tool(tool_name)
         except Exception as e:
             if self.verbose:
                 print(
@@ -103,18 +114,19 @@ class ToolCallPreprocessor(Middleware):
 
         # Log what was filtered
         removed_fields = set(original_args.keys()) - set(filtered_args.keys())
-        if removed_fields and self.verbose:
-            print(
-                f"[Preprocessor] Tool '{tool_name}': filtered {removed_fields}",
-                file=sys.stderr,
-            )
+        if removed_fields:
+            if self.verbose:
+                print(
+                    f"[Preprocessor] Tool '{tool_name}': filtered out {removed_fields}",
+                    file=sys.stderr,
+                )
+        else:
+            # No filtering needed
+            return
 
-        # Replace with filtered arguments
-        # Note: message.arguments might be a dict or similar mutable structure
-        if hasattr(message, "arguments") and message.arguments is not None:
-            # Update arguments in place
-            message.arguments.clear()
-            message.arguments.update(filtered_args)
+        # Replace arguments with filtered version
+        # message.arguments is mutable, so direct assignment works
+        context.message.arguments = filtered_args
 
     def _extract_allowed_params(
         self, schema: dict, tool_name: str
