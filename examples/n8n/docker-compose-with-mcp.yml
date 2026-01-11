@@ -1,0 +1,41 @@
+# Docker Compose - Direct connection (no proxy)
+# Usage: docker-compose -f docker-compose-direct.yml up -d
+#
+# n8n connects directly to MCP server (proxy bypassed)
+# The MCP server middleware handles n8n-specific field filtering
+
+services:
+  n8n:
+    image: n8nio/n8n:2.3.2
+    environment:
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows:ro
+    restart: unless-stopped
+    networks:
+      - n8n-network
+    depends_on:
+      - mcp-server
+
+  mcp-server:
+    image: ghcr.io/cembryonix/cbx-mcp-server-k8s:0.3.1
+    environment:
+      - HOME=/home/appuser
+      - CBX_MCP_SERVER_TRANSPORT_TYPE=http
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount kubeconfig (default: ~/.kube)
+      - ${KUBECONFIG_DIR:-~/.kube}:/home/appuser/.kube:ro
+      # Mount ArgoCD config (default: ~/.config/argocd)
+      - ${ARGOCD_CONFIG_DIR:-~/.config/argocd}:/home/appuser/.config/argocd:ro
+    restart: unless-stopped
+    networks:
+      - n8n-network
+
+networks:
+  n8n-network:
+    driver: bridge

@@ -1,5 +1,0 @@
-{
-  "command": "docker",
-  "args": ["run", "-i", "--rm", "ghcr.io/cembryonix/cbx-mcp-server-k8s:latest"],
-  "env": {}
-}
