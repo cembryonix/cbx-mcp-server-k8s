@@ -1,0 +1,22 @@
+# n8n only - connects to MCP server running on host
+# Usage: docker-compose up -d
+#
+# Requires MCP server running locally:
+#   ./tests/run-server/from-source/start.sh --host 0.0.0.0 --port 8080
+#
+# After importing workflow, change MCP Client endpoint to:
+#   http://localhost:8080/mcp/
+
+volumes:
+  n8n_data:
+
+services:
+  n8n:
+    image: n8nio/n8n:2.4.8
+    environment:
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/workflows:ro
+    restart: unless-stopped
+    network_mode: host

@@ -1,2 +1,2 @@
-# n8n data directory (created on first run)
+# n8n data (if using bind mount instead of named volume)
 n8n_data/

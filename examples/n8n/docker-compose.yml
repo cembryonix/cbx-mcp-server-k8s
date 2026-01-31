@@ -1,19 +1,41 @@
-# n8n only - connects to MCP server running on host
-# Usage: docker-compose up -d
-#
-# Requires MCP server running locally:
-#   ./tests/run-server/from-source/start.sh --host 0.0.0.0 --port 8080
-#
-# After importing workflow, change MCP Client endpoint to:
-#   http://localhost:8080/mcp/
+# Full stack: n8n + MCP server
+# Usage: docker-compose -f docker-compose-with-mcp.yml up -d
+
+volumes:
+  n8n_data:
 
 services:
   n8n:
-    image: n8nio/n8n:2.3.2
+    image: n8nio/n8n:2.4.8
     environment:
       - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+    ports:
+      - "5678:5678"
     volumes:
-      - ./n8n_data:/home/node/.n8n
+      - n8n_data:/home/node/.n8n
       - ./workflows:/home/node/workflows:ro
     restart: unless-stopped
-    network_mode: host
+    networks:
+      - n8n-network
+    depends_on:
+      - mcp-server
+
+  mcp-server:
+    image: ghcr.io/cembryonix/cbx-mcp-server-k8s:0.3.1
+    environment:
+      - HOME=/home/appuser
+      - CBX_MCP_SERVER_TRANSPORT_TYPE=http
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount kubeconfig (default: ~/.kube)
+      - ${KUBECONFIG_DIR:-~/.kube}:/home/appuser/.kube:ro
+      # Mount ArgoCD config (default: ~/.config/argocd)
+      - ${ARGOCD_CONFIG_DIR:-~/.config/argocd}:/home/appuser/.config/argocd:ro
+    restart: unless-stopped
+    networks:
+      - n8n-network
+
+networks:
+  n8n-network:
+    driver: bridge
