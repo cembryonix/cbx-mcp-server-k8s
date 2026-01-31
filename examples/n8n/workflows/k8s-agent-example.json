@@ -12,8 +12,7 @@
         0
       ],
       "id": "9d80153b-e684-4841-aa46-9f1a5fc4a9ac",
-      "name": "When chat message received",
-      "webhookId": "572f2db0-44f7-49c8-b1b0-7e6629a24b39"
+      "name": "When chat message received"
     },
     {
       "parameters": {
@@ -36,7 +35,7 @@
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
       "typeVersion": 1.2,
       "position": [
-        432,
+        496,
         208
       ],
       "id": "21a8b36f-6762-4f33-834f-4b40914070de",
@@ -62,10 +61,22 @@
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
-          "id": "Qqf4HMWSsrVnNBYK",
           "name": "OpenAi account"
         }
       }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        272,
+        208
+      ],
+      "id": "88271e27-6459-46c7-bce1-17be56eb797d",
+      "name": "Simple Memory"
     }
   ],
   "pinData": {},
@@ -102,16 +113,26 @@
           }
         ]
       ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "cfa68233-2f37-4b3a-9849-4b947a55dcab",
+  "versionId": "00000000-0000-0000-0000-000000000000",
   "meta": {
     "templateCredsSetupCompleted": true
   },
-  "id": "0Tg208KSfrHhr0Ab",
   "tags": []
 }

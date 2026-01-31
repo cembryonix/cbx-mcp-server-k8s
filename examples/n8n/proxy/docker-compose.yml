@@ -1,19 +1,22 @@
-# Docker Compose with MCP Server running as container
-# Usage: docker-compose -f docker-compose-with-image.yml up -d
+# n8n + proxy + MCP server
+# Usage: docker-compose up -d
 #
-# This runs the full stack including the MCP server from Docker image.
-# No need to start the MCP server separately.
+# Reference example for MCP servers that can't handle n8n's extra attributes.
+# CBX MCP K8s Server has built-in middleware, so this proxy is NOT needed for it.
+
+volumes:
+  n8n_data:
 
 services:
   n8n:
-    image: n8nio/n8n:2.3.2
+    image: n8nio/n8n:2.4.8
     environment:
       - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
     ports:
       - "5678:5678"
     volumes:
-      - ./n8n_data:/home/node/.n8n
-      - ./workflows:/home/node/workflows:ro
+      - n8n_data:/home/node/.n8n
+      - ../workflows:/home/node/workflows:ro
     restart: unless-stopped
     networks:
       - n8n-network
@@ -23,11 +26,10 @@ services:
   mcp-proxy:
     build:
       context: .
-      dockerfile: Dockerfile.mcp-proxy
+      dockerfile: Dockerfile
     ports:
       - "9000:9000"
     environment:
-      # Connect to mcp-server container (not host.docker.internal)
       - REAL_MCP_SERVER_URL=http://mcp-server:8080/mcp/
       - PROXY_PORT=9000
     restart: unless-stopped
@@ -44,9 +46,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Mount kubeconfig (default: ~/.kube)
       - ${KUBECONFIG_DIR:-~/.kube}:/home/appuser/.kube:ro
-      # Mount ArgoCD config (default: ~/.config/argocd)
       - ${ARGOCD_CONFIG_DIR:-~/.config/argocd}:/home/appuser/.config/argocd:ro
     restart: unless-stopped
     networks:
