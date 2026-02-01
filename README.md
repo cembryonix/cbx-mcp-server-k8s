@@ -4,30 +4,27 @@ An MCP server providing tools for AI agents to manage Kubernetes and cloud infra
 
 Part of the [Cembryonix Project](https://github.com/cembryonix) collection.
 
-## Overview
-
-This server enables AI agents to interact with Kubernetes clusters and related cloud services. While the current release focuses on Kubernetes and ArgoCD, cloud-specific tools (AWS EKS, GCP GKE, Azure AKS) are coming soon.
-
 ## Quick Start
-
-Run the full example with n8n agent using Docker:
 
 ```bash
 cd examples/n8n
-docker-compose -f docker-compose-with-mcp.yml up -d
+./setup.sh
 ```
 
-See [examples/n8n/README.md](examples/n8n/README.md) for setup details.
+Open http://localhost:5678:
+1. **Set up owner account** — create your n8n admin account (first time only)
+2. **Open the imported workflow** and configure your OpenAI API key
 
-## Key Features
+To stop: `docker compose down`
 
-- **Dynamic Tool Loading** — Tools are loaded from configuration, making the server easily expandable and tunable. Not limited to Kubernetes; can be configured for any CLI.
+See [examples/n8n/README.md](examples/n8n/README.md) for more options.
 
-- **Security Guardrails** — Configure which command options should be blocked to prevent dangerous operations (e.g., `--force`, `--all-namespaces` for destructive commands).
+## Features
 
-- **Pipeline Execution** — Built-in support for executing multi-step command pipelines.
-
-- **n8n Compatible** — Middleware handles n8n-specific attributes that other MCP servers may reject.
+- **Dynamic Tool Loading** — Tools loaded from config, easily expandable
+- **Security Guardrails** — Block dangerous command patterns
+- **Pipeline Execution** — Multi-step command pipelines
+- **n8n Compatible** — Middleware handles n8n-specific attributes
 
 ## Available Tools
 
@@ -36,29 +33,23 @@ See [examples/n8n/README.md](examples/n8n/README.md) for setup details.
 | `kubectl` | Kubernetes cluster management |
 | `helm` | Helm chart operations |
 | `argocd` | ArgoCD GitOps operations |
-| *Cloud tools* | Coming soon (EKS, GKE, AKS) |
-
-## Installation
-
-```bash
-# From Docker image
-docker pull ghcr.io/cembryonix/cbx-mcp-server-k8s:0.3.1
-
-# From source
-git clone https://github.com/cembryonix/cbx-mcp-server-k8s.git
-cd cbx-mcp-server-k8s
-pip install -e .
-```
 
 ## Configuration
 
-The server uses YAML configuration files in `app/cbx_mcp_k8s/config/defaults/`:
-- `tools.yaml` — Define available CLI tools
-- `security.yaml` — Security rules and guardrails
-- `settings.yaml` — Server settings
+**Environment variables** (recommended for Docker):
+```
+CBX_MCP_SERVER__PORT=9000
+CBX_MCP_SESSION__PERSISTENCE=redis
+CBX_MCP_SESSION__REDIS_URL=redis://localhost:6379
+```
 
-Environment variables override config using Pydantic's nested model convention:
-`CBX_MCP_SERVER__SECTION__KEY=value` (double underscores separate nested keys)
+**Config files** (mount to `/home/appuser/app_configs`):
+- `config.yaml` — Server settings
+- `security.yaml` — Security rules
+
+Priority: env vars > mounted config > built-in defaults
+
+See [docs/server-configuration.md](docs/server-configuration.md) for full reference.
 
 ## License
 
